@@ -171,29 +171,27 @@ canvas {
   color: var(--accent);
 }
 
-.ghost {
-  justify-self: start;
+.mode.new-player {
+  width: 100%;
   margin-top: 0.15rem;
-  border: 0;
-  background: transparent;
+  border-color: var(--accent-dim);
   color: var(--accent);
-  font: inherit;
-  font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-  cursor: pointer;
-  padding: 0;
 }
 
-.ghost.hidden {
+.mode.new-player:hover,
+.mode.new-player:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.mode.new-player.hidden {
   display: none;
 }
 
-.ghost:hover,
-.ghost:focus-visible {
-  color: #ff4d8f;
+canvas:focus {
   outline: none;
 }
 

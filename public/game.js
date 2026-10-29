@@ -1,8 +1,10 @@
 (() => {
   const ACCENT = "#ff0062";
+  const AI_PADDLE = "#ffffff";
   const BASE_SPEED = 320;
   const RAMP_EVERY = 10;
   const RAMP_FACTOR = 1.1;
+  const SCORE_BONUS = 1.5;
   const COOKIE_NAME = "dealpong_initials";
   const COOKIE_DAYS = 365;
 
@@ -34,7 +36,7 @@
     score: { top: 0, bottom: 0 },
     serve: 1,
     keys: Object.create(null),
-    touchX: null,
+    pointerX: null,
     playTime: 0,
     nextRampAt: RAMP_EVERY,
   };
@@ -241,16 +243,28 @@
   }
 
   function score(side) {
-    const points = speedMultiplier();
+    const playerScored = side === "bottom";
+    const mult = speedMultiplier();
+    const bonus = state.mode === "ai" && playerScored;
+    const points = bonus ? mult * SCORE_BONUS : mult;
     state.score[side] += points;
     scoreTopEl.textContent = formatScore(state.score.top);
     scoreBottomEl.textContent = formatScore(state.score.bottom);
-    state.serve = side === "top" ? 1 : -1;
+    state.serve = playerScored ? -1 : 1;
     state.running = false;
     overlay.classList.remove("hidden");
+
     const bottomName = state.mode === "ai" && state.initials ? state.initials : "BAIXO";
-    const who = side === "bottom" ? bottomName : "CIMA";
-    messageEl.textContent = `+${formatScore(points)} para ${who} (x${formatScore(points)} velocidade).`;
+    if (bonus) {
+      messageEl.textContent = `Bônus +${formatScore(points)} para ${bottomName}. Velocidade mantida (x${formatScore(mult)}).`;
+    } else if (state.mode === "ai" && !playerScored) {
+      resetRamp();
+      messageEl.textContent = `A IA pontuou (+${formatScore(points)}). Velocidade reiniciada.`;
+    } else {
+      const who = playerScored ? bottomName : "CIMA";
+      messageEl.textContent = `+${formatScore(points)} para ${who}.`;
+    }
+
     btnStart.textContent = "Espaço · Continuar";
     statusEl.textContent = `${formatScore(state.score.top)} : ${formatScore(state.score.bottom)}`;
     resetBall(state.serve);
@@ -258,7 +272,7 @@
     ball.vy = 0;
     syncPlayerUi();
     if (state.mode === "ai") {
-      submitResult(side === "bottom", points);
+      submitResult(playerScored, points);
     }
   }
 
@@ -299,8 +313,8 @@
 
     moveHuman(bottomPaddle, "ArrowLeft", "ArrowRight", dt);
     moveHuman(bottomPaddle, "a", "d", dt);
-    if (state.touchX != null) {
-      bottomPaddle.x = state.touchX - paddle.w / 2;
+    if (state.pointerX != null) {
+      bottomPaddle.x = state.pointerX - paddle.w / 2;
       clampPaddle(bottomPaddle);
     }
 
@@ -364,7 +378,7 @@
 
   function draw() {
     drawCourt();
-    drawPaddle(topPaddle, "#ffb454");
+    drawPaddle(topPaddle, state.mode === "ai" ? AI_PADDLE : "#ffb454");
     drawPaddle(bottomPaddle, ACCENT);
     drawBall();
   }
@@ -375,6 +389,13 @@
     update(dt);
     draw();
     requestAnimationFrame(loop);
+  }
+
+  function focusPlayfield() {
+    if (document.activeElement && document.activeElement !== canvas) {
+      document.activeElement.blur();
+    }
+    canvas.focus({ preventScroll: true });
   }
 
   function startGame() {
@@ -392,14 +413,12 @@
 
     const startingFresh = !state.running && ball.vx === 0 && ball.vy === 0;
     if (startingFresh) {
-      if (state.score.top === 0 && state.score.bottom === 0 && state.playTime === 0) {
-        resetRamp();
-      }
       resetBall(state.serve);
     }
 
     state.running = true;
     overlay.classList.add("hidden");
+    focusPlayfield();
     statusEl.textContent =
       ball.speed === BASE_SPEED ? "AO VIVO" : `x${(ball.speed / BASE_SPEED).toFixed(2)}`;
     btnStart.textContent = "Espaço · Pausar";
@@ -464,8 +483,14 @@
       }
       return;
     }
-    state.keys[e.key] = true;
-    state.keys[e.key.toLowerCase()] = true;
+
+    const key = e.key;
+    const lower = key.toLowerCase();
+    state.keys[key] = true;
+    state.keys[lower] = true;
+    if (key === "ArrowLeft" || key === "ArrowRight" || lower === "a" || lower === "d") {
+      state.pointerX = null;
+    }
     if (e.code === "Space") {
       e.preventDefault();
       toggleRun();
@@ -490,7 +515,8 @@
     "pointerdown",
     (e) => {
       canvas.setPointerCapture(e.pointerId);
-      state.touchX = pointerToCanvasX(e.clientX);
+      state.pointerX = pointerToCanvasX(e.clientX);
+      focusPlayfield();
       if (!state.running) startGame();
     },
     { passive: true }
@@ -499,19 +525,24 @@
   canvas.addEventListener(
     "pointermove",
     (e) => {
-      if (e.buttons || e.pointerType === "touch" || state.touchX != null) {
-        state.touchX = pointerToCanvasX(e.clientX);
-      }
+      if (!state.running && e.pointerType !== "touch" && !e.buttons) return;
+      state.pointerX = pointerToCanvasX(e.clientX);
     },
     { passive: true }
   );
 
-  canvas.addEventListener("pointerup", () => {
-    state.touchX = null;
-  });
+  canvas.addEventListener(
+    "pointerenter",
+    (e) => {
+      if (state.running) state.pointerX = pointerToCanvasX(e.clientX);
+    },
+    { passive: true }
+  );
 
   canvas.addEventListener("pointercancel", () => {
-    state.touchX = null;
+    if (state.pointerX != null && !state.keys.ArrowLeft && !state.keys.ArrowRight) {
+      // keep last pointer position for mouse; clear only on cancel without keys
+    }
   });
 
   btnStart.addEventListener("click", toggleRun);

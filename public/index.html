@@ -21,7 +21,7 @@
       </header>
 
       <div class="board-wrap">
-        <canvas id="game" width="480" height="720" aria-label="Campo do Dealpong"></canvas>
+        <canvas id="game" width="480" height="720" tabindex="0" aria-label="Campo do Dealpong"></canvas>
 
         <div id="overlay" class="overlay" role="dialog" aria-modal="true">
           <div class="panel">
@@ -46,7 +46,7 @@
                 aria-describedby="initials-hint"
               />
               <p id="initials-hint" class="hint">Digite exatamente 5 caracteres para jogar vs IA.</p>
-              <button type="button" id="btn-new-player" class="ghost hidden">New player</button>
+              <button type="button" id="btn-new-player" class="mode new-player hidden">New player</button>
             </div>
             <button type="button" id="btn-start" class="cta">Espaço · Jogar</button>
             <ul class="help">
