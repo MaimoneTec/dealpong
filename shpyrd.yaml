@@ -1,4 +1,4 @@
-project: t-rex-pong
+project: dealpong
 
 build:
   stack: full
