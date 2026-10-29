@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1210" />
+    <title>T-REX Pong</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="stage">
+      <header class="hud">
+        <p class="brand">T-REX</p>
+        <h1>PONG</h1>
+        <p class="tag">raquetes horizontais · proteja o fundo</p>
+      </header>
+
+      <div class="board-wrap">
+        <canvas id="game" width="480" height="720" aria-label="Campo do T-REX Pong"></canvas>
+
+        <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+          <div class="panel">
+            <p class="panel-kicker">pronto para jogar</p>
+            <p id="message" class="panel-msg">Evite que a bola toque o seu fundo.</p>
+            <div class="modes">
+              <button type="button" id="btn-ai" class="mode active" data-mode="ai">1P · vs IA</button>
+              <button type="button" id="btn-2p" class="mode" data-mode="2p">2P · local</button>
+            </div>
+            <button type="button" id="btn-start" class="cta">Espaço · Jogar</button>
+            <ul class="help">
+              <li><span>P1</span> ← → / A D / touch</li>
+              <li><span>P2</span> J L</li>
+              <li><span>Pausa</span> Espaço</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <footer class="scoreboard" aria-live="polite">
+        <div class="score">
+          <span class="label">cima</span>
+          <strong id="score-top">0</strong>
+        </div>
+        <div class="score center">
+          <span class="label">melhor de ∞</span>
+          <strong id="status">—</strong>
+        </div>
+        <div class="score right">
+          <span class="label">baixo</span>
+          <strong id="score-bottom">0</strong>
+        </div>
+      </footer>
+    </div>
+    <script src="/game.js"></script>
+  </body>
+</html>

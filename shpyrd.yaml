@@ -1,0 +1,6 @@
+project: t-rex-pong
+
+processes:
+  web:
+    healthCheck:
+      path: /healthz
