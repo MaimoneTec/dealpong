@@ -13,8 +13,10 @@
   const overlay = document.getElementById("overlay");
   const messageEl = document.getElementById("message");
   const statusEl = document.getElementById("status");
+  const scoreTopWrap = document.getElementById("score-top-wrap");
   const scoreTopEl = document.getElementById("score-top");
   const scoreBottomEl = document.getElementById("score-bottom");
+  const labelTopEl = document.getElementById("label-top");
   const labelBottomEl = document.getElementById("label-bottom");
   const btnStart = document.getElementById("btn-start");
   const btnAi = document.getElementById("btn-ai");
@@ -109,12 +111,15 @@
     }
   }
 
-  function updateBottomLabel() {
-    if (state.mode === "ai" && state.initials) {
-      labelBottomEl.textContent = state.initials;
-    } else if (state.mode === "ai") {
-      labelBottomEl.textContent = "você";
+  function updateScoreLabels() {
+    if (state.mode === "ai") {
+      scoreTopWrap.classList.add("hidden");
+      labelTopEl.textContent = "ia";
+      scoreTopEl.textContent = "—";
+      labelBottomEl.textContent = state.initials || "você";
     } else {
+      scoreTopWrap.classList.remove("hidden");
+      labelTopEl.textContent = "cima";
       labelBottomEl.textContent = "baixo";
     }
   }
@@ -178,7 +183,7 @@
     state.lockedPlayer = true;
     initialsInput.value = initials;
     writeCookie(COOKIE_NAME, initials, COOKIE_DAYS);
-    updateBottomLabel();
+    updateScoreLabels();
     syncPlayerUi();
   }
 
@@ -188,7 +193,7 @@
     state.lockedPlayer = false;
     initialsInput.value = "";
     initialsInput.readOnly = false;
-    updateBottomLabel();
+    updateScoreLabels();
     syncPlayerUi();
     initialsInput.focus();
     messageEl.textContent = "New player: digite novas iniciais (5 caracteres).";
@@ -201,7 +206,7 @@
       state.lockedPlayer = true;
       initialsInput.value = saved;
     }
-    updateBottomLabel();
+    updateScoreLabels();
     syncPlayerUi();
   }
 
@@ -256,12 +261,18 @@
   }
 
   function refreshScoreboard() {
-    scoreTopEl.textContent = formatScore(state.score.top);
+    if (state.mode === "2p") {
+      scoreTopEl.textContent = formatScore(state.score.top);
+    } else {
+      scoreTopEl.textContent = "—";
+    }
     scoreBottomEl.textContent = formatScore(state.score.bottom);
     statusEl.textContent = `x${formatScore(speedMultiplier())}`;
   }
 
   function awardHit(side) {
+    // No vs IA, só o player pontua; no 2P ambos pontuam
+    if (state.mode === "ai" && side === "top") return;
     const points = speedMultiplier();
     state.score[side] += points;
     refreshScoreboard();
@@ -287,15 +298,20 @@
       return;
     }
 
-    // Jogador errou o fundo → pausa e reinicia velocidade
+    // Jogador errou o fundo
     state.serve = 1;
     state.running = false;
     overlay.classList.remove("hidden");
-    resetRamp();
-    if (state.mode === "ai" && state.initials) {
-      submitResult(false, mult || 1);
+
+    if (state.mode === "ai") {
+      state.score.top = 0;
+      state.score.bottom = 0;
+      resetRamp();
+      messageEl.textContent = "Você perdeu. Pontuação e velocidade reiniciadas.";
+    } else {
+      messageEl.textContent = "Baixo errou o fundo.";
     }
-    messageEl.textContent = "Fundo vazou. Velocidade reiniciada.";
+
     btnStart.textContent = "Espaço · Continuar";
     refreshScoreboard();
     resetBall(state.serve);
@@ -494,7 +510,8 @@
     }
     btnStart.textContent = "Espaço · Jogar";
     statusEl.textContent = "—";
-    updateBottomLabel();
+    updateScoreLabels();
+    refreshScoreboard();
     if (mode === "ai" && !state.lockedPlayer) initialsInput.focus();
   }
 
