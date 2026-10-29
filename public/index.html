@@ -46,6 +46,7 @@
                 aria-describedby="initials-hint"
               />
               <p id="initials-hint" class="hint">Digite exatamente 5 caracteres para jogar vs IA.</p>
+              <button type="button" id="btn-new-player" class="ghost hidden">New player</button>
             </div>
             <button type="button" id="btn-start" class="cta">Espaço · Jogar</button>
             <ul class="help">
@@ -71,6 +72,16 @@
           <strong id="score-bottom">0</strong>
         </div>
       </footer>
+
+      <section class="ranking" aria-labelledby="ranking-title">
+        <div class="ranking-head">
+          <h2 id="ranking-title">Ranking</h2>
+          <p class="ranking-sub">vitórias vs IA</p>
+        </div>
+        <ol id="ranking-list" class="ranking-list">
+          <li class="empty">Carregando…</li>
+        </ol>
+      </section>
     </div>
     <script src="/game.js"></script>
   </body>

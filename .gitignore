@@ -4,3 +4,7 @@ node_modules/
 *.log
 .idea/
 .vscode/
+dev.db
+__pycache__/
+*.pyc
+.venv/
