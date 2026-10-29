@@ -41,6 +41,7 @@
     pointerX: null,
     playTime: 0,
     nextRampAt: RAMP_EVERY,
+    serveFrom: null,
   };
 
   const paddle = {
@@ -225,15 +226,28 @@
     ball.vy = Math.cos(angle) * ball.speed * dir;
   }
 
-  /** Saque neutro no centro (direção aleatória) para não favorecer ninguém. */
-  function serveFromCenter() {
-    ball.x = W / 2;
-    ball.y = H / 2;
-    const angle = (Math.random() * 0.5 - 0.25) * Math.PI;
-    const dir = Math.random() < 0.5 ? 1 : -1;
+  /** Posiciona a bola parada no lado que tomou o fundo, pronta para a relargada. */
+  function parkBallAtSide(side) {
+    ball.x = W / 2 + (Math.random() - 0.5) * 60;
+    if (side === "top") {
+      ball.y = topPaddle.y + paddle.h + ball.r + 10;
+      state.serve = 1;
+    } else {
+      ball.y = bottomPaddle.y - ball.r - 10;
+      state.serve = -1;
+    }
+    ball.vx = 0;
+    ball.vy = 0;
+    state.serveFrom = side;
+  }
+
+  function launchFromParkedSide() {
+    const angle = (Math.random() * 0.55 - 0.275) * Math.PI;
+    const dir = state.serveFrom === "top" ? 1 : -1;
+    state.serve = dir;
     ball.vx = Math.sin(angle) * ball.speed;
     ball.vy = Math.cos(angle) * ball.speed * dir;
-    state.serve = dir;
+    state.serveFrom = null;
   }
 
   function clampPaddle(p) {
@@ -285,16 +299,21 @@
     const playerMissed = sideThatMissed === "bottom";
     const mult = speedMultiplier();
 
-    // Bônus: bola no fundo adversário → pontos extra, velocidade mantida, saque neutro no centro
+    // Bônus: bola no fundo adversário → pausa + msg; relargada sai desse lado (não do centro)
     if (!playerMissed) {
       const points = mult * SCORE_BONUS;
       state.score.bottom += points;
+      state.running = false;
+      overlay.classList.remove("hidden");
+      messageEl.textContent = `Bônus +${formatScore(points)}! Velocidade mantida (x${formatScore(mult)}).`;
+      btnStart.textContent = "Espaço · Continuar";
+      statusEl.textContent = `BÔNUS x${formatScore(mult)}`;
       refreshScoreboard();
+      parkBallAtSide("top");
       if (state.mode === "ai" && state.initials) {
         submitResult(true, points);
       }
-      statusEl.textContent = `BÔNUS x${formatScore(mult)}`;
-      serveFromCenter();
+      syncPlayerUi();
       return;
     }
 
@@ -314,6 +333,7 @@
 
     btnStart.textContent = "Espaço · Continuar";
     refreshScoreboard();
+    state.serveFrom = null;
     resetBall(state.serve);
     ball.vx = 0;
     ball.vy = 0;
@@ -457,14 +477,18 @@
 
     const startingFresh = !state.running && ball.vx === 0 && ball.vy === 0;
     if (startingFresh) {
-      resetBall(state.serve);
+      if (state.serveFrom) {
+        launchFromParkedSide();
+      } else {
+        resetBall(state.serve);
+      }
     }
 
     state.running = true;
     overlay.classList.add("hidden");
     focusPlayfield();
     statusEl.textContent =
-      ball.speed === BASE_SPEED ? "AO VIVO" : `x${(ball.speed / BASE_SPEED).toFixed(2)}`;
+      ball.speed === BASE_SPEED ? "AO VIVO" : `x${formatScore(speedMultiplier())}`;
     btnStart.textContent = "Espaço · Pausar";
   }
 
