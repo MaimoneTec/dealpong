@@ -158,14 +158,17 @@
     return ball.speed / BASE_SPEED;
   }
 
+  function pointsFrom(value) {
+    return Math.floor(Number(value) || 0);
+  }
+
   function formatScore(value) {
-    const n = Number(value) || 0;
-    return Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2);
+    return String(pointsFrom(value));
   }
 
   async function submitRecord() {
     if (state.mode !== "ai" || !state.initials) return;
-    const score = state.score.bottom;
+    const score = pointsFrom(state.score.bottom);
     if (score <= 0) return;
     try {
       const res = await fetch("/api/result", {
@@ -283,13 +286,14 @@
       scoreTopEl.textContent = "—";
     }
     scoreBottomEl.textContent = formatScore(state.score.bottom);
-    statusEl.textContent = `x${formatScore(speedMultiplier())}`;
+    const mult = speedMultiplier();
+    statusEl.textContent = `x${mult.toFixed(2)}`;
   }
 
   function awardHit(side) {
     // No vs IA, só o player pontua; no 2P ambos pontuam
     if (state.mode === "ai" && side === "top") return;
-    const points = speedMultiplier();
+    const points = pointsFrom(speedMultiplier());
     state.score[side] += points;
     refreshScoreboard();
     if (state.mode === "ai" && side === "bottom") {
@@ -303,13 +307,13 @@
 
     // Bônus: bola no fundo adversário → pausa + msg; relargada sai desse lado (não do centro)
     if (!playerMissed) {
-      const points = mult * SCORE_BONUS;
+      const points = pointsFrom(mult * SCORE_BONUS);
       state.score.bottom += points;
       state.running = false;
       overlay.classList.remove("hidden");
-      messageEl.textContent = `Bônus +${formatScore(points)}! Velocidade mantida (x${formatScore(mult)}).`;
+      messageEl.textContent = `Bônus +${points}! Velocidade mantida (x${mult.toFixed(2)}).`;
       btnStart.textContent = "Espaço · Continuar";
-      statusEl.textContent = `BÔNUS x${formatScore(mult)}`;
+      statusEl.textContent = `BÔNUS x${mult.toFixed(2)}`;
       refreshScoreboard();
       parkBallAtSide("top");
       submitRecord();
@@ -489,7 +493,7 @@
     overlay.classList.add("hidden");
     focusPlayfield();
     statusEl.textContent =
-      ball.speed === BASE_SPEED ? "AO VIVO" : `x${formatScore(speedMultiplier())}`;
+      ball.speed === BASE_SPEED ? "AO VIVO" : `x${speedMultiplier().toFixed(2)}`;
     btnStart.textContent = "Espaço · Pausar";
   }
 

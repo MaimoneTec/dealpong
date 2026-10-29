@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import math
 import os
 import re
 import signal
@@ -54,8 +55,8 @@ def list_ranking(limit=10):
     return [
         {
             "initials": row["initials"],
-            "wins": round(float(row["wins"]), 2),
-            "losses": round(float(row["losses"]), 2),
+            "wins": int(math.floor(float(row["wins"]))),
+            "losses": int(math.floor(float(row["losses"]))),
         }
         for row in rows
     ]
@@ -64,7 +65,7 @@ def list_ranking(limit=10):
 def record_score(initials: str, score: float):
     """Guarda o recorde (melhor pontuação de uma partida), nunca soma entre partidas."""
     now_expr = "NOW()" if is_postgres() else "CURRENT_TIMESTAMP"
-    value = round(float(score), 4)
+    value = int(math.floor(float(score)))
     if value < 0 or value > 1_000_000:
         raise ValueError("score out of range")
     if is_postgres():
@@ -100,8 +101,8 @@ def record_score(initials: str, score: float):
             row = cur.fetchone()
     return {
         "initials": row["initials"],
-        "wins": round(float(row["wins"]), 2),
-        "losses": round(float(row["losses"]), 2),
+        "wins": int(math.floor(float(row["wins"]))),
+        "losses": int(math.floor(float(row["losses"]))),
     }
 
 
