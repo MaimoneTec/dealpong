@@ -1,5 +1,8 @@
 project: t-rex-pong
 
+build:
+  stack: full
+
 processes:
   web:
     healthCheck:
