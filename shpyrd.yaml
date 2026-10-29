@@ -2,6 +2,7 @@ project: t-rex-pong
 
 build:
   stack: full
+  buildpacks: [python, procfile]
 
 processes:
   web:

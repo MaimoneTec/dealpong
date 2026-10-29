@@ -12,7 +12,7 @@ Jogo estilo console: duas raquetes horizontais e uma bola. Cada lado evita que a
 ## Local
 
 ```bash
-npm start
+python server.py
 ```
 
 Abra http://localhost:8080
