@@ -61,34 +61,31 @@ def list_ranking(limit=10):
     ]
 
 
-def record_result(initials: str, won: bool, points: float):
+def record_score(initials: str, score: float):
+    """Guarda o recorde (melhor pontuação de uma partida), nunca soma entre partidas."""
     now_expr = "NOW()" if is_postgres() else "CURRENT_TIMESTAMP"
-    value = round(float(points), 4)
-    if value <= 0 or value > 100:
-        raise ValueError("points out of range")
-    win_inc = value if won else 0.0
-    loss_inc = 0.0 if won else value
+    value = round(float(score), 4)
+    if value < 0 or value > 1_000_000:
+        raise ValueError("score out of range")
     if is_postgres():
         sql = f"""
             INSERT INTO players (initials, wins, losses)
-            VALUES (%s, %s, %s)
+            VALUES (%s, %s, 0)
             ON CONFLICT (initials) DO UPDATE SET
-              wins = players.wins + EXCLUDED.wins,
-              losses = players.losses + EXCLUDED.losses,
+              wins = GREATEST(players.wins, EXCLUDED.wins),
               updated_at = {now_expr}
             RETURNING initials, wins, losses
         """
-        params = (initials, win_inc, loss_inc)
+        params = (initials, value)
     else:
         sql = f"""
             INSERT INTO players (initials, wins, losses, updated_at)
-            VALUES (?, ?, ?, {now_expr})
+            VALUES (?, ?, 0, {now_expr})
             ON CONFLICT(initials) DO UPDATE SET
-              wins = wins + excluded.wins,
-              losses = losses + excluded.losses,
+              wins = MAX(wins, excluded.wins),
               updated_at = {now_expr}
         """
-        params = (initials, win_inc, loss_inc)
+        params = (initials, value)
 
     with connect() as conn:
         cur = conn.cursor()
@@ -162,18 +159,15 @@ class Handler(SimpleHTTPRequestHandler):
             json_response(self, 400, {"error": "initials must be exactly 5 A-Z/0-9"})
             return
 
-        if "won" not in payload or not isinstance(payload["won"], bool):
-            json_response(self, 400, {"error": "won must be a boolean"})
-            return
-
+        raw_score = payload.get("score", payload.get("points"))
         try:
-            points = float(payload.get("points", 1))
+            score = float(raw_score)
         except (TypeError, ValueError):
-            json_response(self, 400, {"error": "points must be a number"})
+            json_response(self, 400, {"error": "score must be a number"})
             return
 
         try:
-            player = record_result(initials, payload["won"], points)
+            player = record_score(initials, score)
             ranking = list_ranking(10)
             json_response(self, 200, {"player": player, "ranking": ranking})
         except ValueError as exc:

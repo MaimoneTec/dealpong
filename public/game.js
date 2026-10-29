@@ -137,7 +137,7 @@
         return `<li>
           <span class="pos">${index + 1}</span>
           <span class="name${mine}">${row.initials}</span>
-          <span class="stats">${formatScore(row.wins)}</span>
+          <span class="stats">${formatScore(row.wins)} pts</span>
         </li>`;
       })
       .join("");
@@ -163,19 +163,21 @@
     return Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2);
   }
 
-  async function submitResult(won, points) {
+  async function submitRecord() {
     if (state.mode !== "ai" || !state.initials) return;
+    const score = state.score.bottom;
+    if (score <= 0) return;
     try {
       const res = await fetch("/api/result", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initials: state.initials, won, points }),
+        body: JSON.stringify({ initials: state.initials, score }),
       });
       if (!res.ok) throw new Error("result failed");
       const data = await res.json();
       renderRanking(data.ranking || []);
     } catch {
-      // ranking refresh is best-effort after a point
+      // ranking refresh is best-effort
     }
   }
 
@@ -290,8 +292,8 @@
     const points = speedMultiplier();
     state.score[side] += points;
     refreshScoreboard();
-    if (state.mode === "ai" && side === "bottom" && state.initials) {
-      submitResult(true, points);
+    if (state.mode === "ai" && side === "bottom") {
+      submitRecord();
     }
   }
 
@@ -310,23 +312,22 @@
       statusEl.textContent = `BÔNUS x${formatScore(mult)}`;
       refreshScoreboard();
       parkBallAtSide("top");
-      if (state.mode === "ai" && state.initials) {
-        submitResult(true, points);
-      }
+      submitRecord();
       syncPlayerUi();
       return;
     }
 
-    // Jogador errou o fundo
+    // Jogador errou o fundo: grava recorde da partida, depois zera placar local
     state.serve = 1;
     state.running = false;
     overlay.classList.remove("hidden");
 
     if (state.mode === "ai") {
+      submitRecord();
       state.score.top = 0;
       state.score.bottom = 0;
       resetRamp();
-      messageEl.textContent = "Você perdeu. Pontuação e velocidade reiniciadas.";
+      messageEl.textContent = "Você perdeu. Partida reiniciada (recorde mantido no ranking).";
     } else {
       messageEl.textContent = "Baixo errou o fundo.";
     }
