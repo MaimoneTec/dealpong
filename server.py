@@ -38,7 +38,7 @@ def main():
 
     signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
-    print(f"trex-pong listening on 0.0.0.0:{PORT}")
+    print(f"dealpong listening on 0.0.0.0:{PORT}")
     server.serve_forever()
 
 

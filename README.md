@@ -1,4 +1,4 @@
-# T-REX Pong
+# Dealpong
 
 Jogo estilo console: duas raquetes horizontais e uma bola. Cada lado evita que a bola atinja o fundo.
 
