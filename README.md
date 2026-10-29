@@ -1,6 +1,6 @@
 # Dealpong
 
-Jogo estilo console: duas raquetes horizontais e uma bola. Ranking de vitórias vs IA em Postgres (ou SQLite local).
+Jogo estilo console: duas raquetes horizontais e uma bola. Pontos por tapa (× velocidade). Ranking vs IA em Postgres.
 
 ## Controles
 

@@ -125,12 +125,13 @@
       return;
     }
     rankingList.innerHTML = rows
+      .slice(0, 10)
       .map((row, index) => {
         const mine = state.initials && row.initials === state.initials ? " me" : "";
         return `<li>
           <span class="pos">${index + 1}</span>
           <span class="name${mine}">${row.initials}</span>
-          <span class="stats">${formatScore(row.wins)} · ${formatScore(row.losses)}L</span>
+          <span class="stats">${formatScore(row.wins)}</span>
         </li>`;
       })
       .join("");
@@ -219,6 +220,17 @@
     ball.vy = Math.cos(angle) * ball.speed * dir;
   }
 
+  /** Saque neutro no centro (direção aleatória) para não favorecer ninguém. */
+  function serveFromCenter() {
+    ball.x = W / 2;
+    ball.y = H / 2;
+    const angle = (Math.random() * 0.5 - 0.25) * Math.PI;
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    ball.vx = Math.sin(angle) * ball.speed;
+    ball.vy = Math.cos(angle) * ball.speed * dir;
+    state.serve = dir;
+  }
+
   function clampPaddle(p) {
     p.x = Math.max(8, Math.min(W - paddle.w - 8, p.x));
   }
@@ -231,6 +243,7 @@
     ball.vx = Math.sin(angle) * ball.speed;
     ball.vy = Math.cos(angle) * ball.speed * (fromTop ? 1 : -1);
     ball.y = fromTop ? p.y + paddle.h + ball.r + 1 : p.y - ball.r - 1;
+    awardHit(fromTop ? "top" : "bottom");
   }
 
   function collides(p) {
@@ -242,38 +255,53 @@
     );
   }
 
-  function score(side) {
-    const playerScored = side === "bottom";
-    const mult = speedMultiplier();
-    const bonus = state.mode === "ai" && playerScored;
-    const points = bonus ? mult * SCORE_BONUS : mult;
-    state.score[side] += points;
+  function refreshScoreboard() {
     scoreTopEl.textContent = formatScore(state.score.top);
     scoreBottomEl.textContent = formatScore(state.score.bottom);
-    state.serve = playerScored ? -1 : 1;
-    state.running = false;
-    overlay.classList.remove("hidden");
+    statusEl.textContent = `x${formatScore(speedMultiplier())}`;
+  }
 
-    const bottomName = state.mode === "ai" && state.initials ? state.initials : "BAIXO";
-    if (bonus) {
-      messageEl.textContent = `Bônus +${formatScore(points)} para ${bottomName}. Velocidade mantida (x${formatScore(mult)}).`;
-    } else if (state.mode === "ai" && !playerScored) {
-      resetRamp();
-      messageEl.textContent = `A IA pontuou (+${formatScore(points)}). Velocidade reiniciada.`;
-    } else {
-      const who = playerScored ? bottomName : "CIMA";
-      messageEl.textContent = `+${formatScore(points)} para ${who}.`;
+  function awardHit(side) {
+    const points = speedMultiplier();
+    state.score[side] += points;
+    refreshScoreboard();
+    if (state.mode === "ai" && side === "bottom" && state.initials) {
+      submitResult(true, points);
+    }
+  }
+
+  function miss(sideThatMissed) {
+    const playerMissed = sideThatMissed === "bottom";
+    const mult = speedMultiplier();
+
+    // Bônus: bola no fundo adversário → pontos extra, velocidade mantida, saque neutro no centro
+    if (!playerMissed) {
+      const points = mult * SCORE_BONUS;
+      state.score.bottom += points;
+      refreshScoreboard();
+      if (state.mode === "ai" && state.initials) {
+        submitResult(true, points);
+      }
+      statusEl.textContent = `BÔNUS x${formatScore(mult)}`;
+      serveFromCenter();
+      return;
     }
 
+    // Jogador errou o fundo → pausa e reinicia velocidade
+    state.serve = 1;
+    state.running = false;
+    overlay.classList.remove("hidden");
+    resetRamp();
+    if (state.mode === "ai" && state.initials) {
+      submitResult(false, mult || 1);
+    }
+    messageEl.textContent = "Fundo vazou. Velocidade reiniciada.";
     btnStart.textContent = "Espaço · Continuar";
-    statusEl.textContent = `${formatScore(state.score.top)} : ${formatScore(state.score.bottom)}`;
+    refreshScoreboard();
     resetBall(state.serve);
     ball.vx = 0;
     ball.vy = 0;
     syncPlayerUi();
-    if (state.mode === "ai") {
-      submitResult(playerScored, points);
-    }
   }
 
   function moveHuman(p, left, right, dt) {
@@ -302,7 +330,7 @@
       ball.vx = (ball.vx / dir) * ball.speed;
       ball.vy = (ball.vy / dir) * ball.speed;
       state.nextRampAt += RAMP_EVERY;
-      statusEl.textContent = `x${(ball.speed / BASE_SPEED).toFixed(2)}`;
+      refreshScoreboard();
     }
   }
 
@@ -338,8 +366,8 @@
     if (ball.vy < 0 && collides(topPaddle)) bounceFromPaddle(topPaddle, true);
     if (ball.vy > 0 && collides(bottomPaddle)) bounceFromPaddle(bottomPaddle, false);
 
-    if (ball.y + ball.r < 0) score("bottom");
-    else if (ball.y - ball.r > H) score("top");
+    if (ball.y + ball.r < 0) miss("top");
+    else if (ball.y - ball.r > H) miss("bottom");
   }
 
   function drawCourt() {
