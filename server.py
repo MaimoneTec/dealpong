@@ -54,17 +54,20 @@ def list_ranking(limit=10):
     return [
         {
             "initials": row["initials"],
-            "wins": int(row["wins"]),
-            "losses": int(row["losses"]),
+            "wins": round(float(row["wins"]), 2),
+            "losses": round(float(row["losses"]), 2),
         }
         for row in rows
     ]
 
 
-def record_result(initials: str, won: bool):
+def record_result(initials: str, won: bool, points: float):
     now_expr = "NOW()" if is_postgres() else "CURRENT_TIMESTAMP"
-    win_inc = 1 if won else 0
-    loss_inc = 0 if won else 1
+    value = round(float(points), 4)
+    if value <= 0 or value > 100:
+        raise ValueError("points out of range")
+    win_inc = value if won else 0.0
+    loss_inc = 0.0 if won else value
     if is_postgres():
         sql = f"""
             INSERT INTO players (initials, wins, losses)
@@ -100,8 +103,8 @@ def record_result(initials: str, won: bool):
             row = cur.fetchone()
     return {
         "initials": row["initials"],
-        "wins": int(row["wins"]),
-        "losses": int(row["losses"]),
+        "wins": round(float(row["wins"]), 2),
+        "losses": round(float(row["losses"]), 2),
     }
 
 
@@ -164,9 +167,17 @@ class Handler(SimpleHTTPRequestHandler):
             return
 
         try:
-            player = record_result(initials, payload["won"])
+            points = float(payload.get("points", 1))
+        except (TypeError, ValueError):
+            json_response(self, 400, {"error": "points must be a number"})
+            return
+
+        try:
+            player = record_result(initials, payload["won"], points)
             ranking = list_ranking()
             json_response(self, 200, {"player": player, "ranking": ranking})
+        except ValueError as exc:
+            json_response(self, 400, {"error": str(exc)})
         except Exception as exc:
             print(f"result error: {exc}")
             json_response(self, 500, {"error": "failed to save result"})

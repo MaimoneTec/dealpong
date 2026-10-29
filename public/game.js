@@ -128,7 +128,7 @@
         return `<li>
           <span class="pos">${index + 1}</span>
           <span class="name${mine}">${row.initials}</span>
-          <span class="stats">${row.wins}W · ${row.losses}L</span>
+          <span class="stats">${formatScore(row.wins)} · ${formatScore(row.losses)}L</span>
         </li>`;
       })
       .join("");
@@ -145,13 +145,22 @@
     }
   }
 
-  async function submitResult(won) {
+  function speedMultiplier() {
+    return ball.speed / BASE_SPEED;
+  }
+
+  function formatScore(value) {
+    const n = Number(value) || 0;
+    return Math.abs(n - Math.round(n)) < 0.005 ? String(Math.round(n)) : n.toFixed(2);
+  }
+
+  async function submitResult(won, points) {
     if (state.mode !== "ai" || !state.initials) return;
     try {
       const res = await fetch("/api/result", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initials: state.initials, won }),
+        body: JSON.stringify({ initials: state.initials, won, points }),
       });
       if (!res.ok) throw new Error("result failed");
       const data = await res.json();
@@ -232,25 +241,24 @@
   }
 
   function score(side) {
-    state.score[side] += 1;
-    scoreTopEl.textContent = String(state.score.top);
-    scoreBottomEl.textContent = String(state.score.bottom);
+    const points = speedMultiplier();
+    state.score[side] += points;
+    scoreTopEl.textContent = formatScore(state.score.top);
+    scoreBottomEl.textContent = formatScore(state.score.bottom);
     state.serve = side === "top" ? 1 : -1;
     state.running = false;
     overlay.classList.remove("hidden");
     const bottomName = state.mode === "ai" && state.initials ? state.initials : "BAIXO";
-    messageEl.textContent =
-      side === "bottom"
-        ? `Ponto para ${bottomName}. A bola passou do topo.`
-        : `Ponto para CIMA. A bola passou do fundo.`;
+    const who = side === "bottom" ? bottomName : "CIMA";
+    messageEl.textContent = `+${formatScore(points)} para ${who} (x${formatScore(points)} velocidade).`;
     btnStart.textContent = "Espaço · Continuar";
-    statusEl.textContent = `${state.score.top} : ${state.score.bottom}`;
+    statusEl.textContent = `${formatScore(state.score.top)} : ${formatScore(state.score.bottom)}`;
     resetBall(state.serve);
     ball.vx = 0;
     ball.vy = 0;
     syncPlayerUi();
     if (state.mode === "ai") {
-      submitResult(side === "bottom");
+      submitResult(side === "bottom", points);
     }
   }
 
