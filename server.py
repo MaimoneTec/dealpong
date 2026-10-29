@@ -135,7 +135,7 @@ class Handler(SimpleHTTPRequestHandler):
 
         if path == "/api/ranking":
             try:
-                ranking = list_ranking()
+                ranking = list_ranking(10)
                 json_response(self, 200, {"ranking": ranking})
             except Exception as exc:
                 print(f"ranking error: {exc}")
@@ -174,7 +174,7 @@ class Handler(SimpleHTTPRequestHandler):
 
         try:
             player = record_result(initials, payload["won"], points)
-            ranking = list_ranking()
+            ranking = list_ranking(10)
             json_response(self, 200, {"player": player, "ranking": ranking})
         except ValueError as exc:
             json_response(self, 400, {"error": str(exc)})
