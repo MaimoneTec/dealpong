@@ -6,5 +6,6 @@ build:
 
 processes:
   web:
+    memory: 200Mi
     healthCheck:
       path: /healthz
