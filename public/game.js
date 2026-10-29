@@ -1,4 +1,9 @@
 (() => {
+  const ACCENT = "#ff0062";
+  const BASE_SPEED = 320;
+  const RAMP_EVERY = 10;
+  const RAMP_FACTOR = 1.1;
+
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
   const overlay = document.getElementById("overlay");
@@ -6,9 +11,13 @@
   const statusEl = document.getElementById("status");
   const scoreTopEl = document.getElementById("score-top");
   const scoreBottomEl = document.getElementById("score-bottom");
+  const labelBottomEl = document.getElementById("label-bottom");
   const btnStart = document.getElementById("btn-start");
   const btnAi = document.getElementById("btn-ai");
   const btn2p = document.getElementById("btn-2p");
+  const initialsField = document.getElementById("initials-field");
+  const initialsInput = document.getElementById("initials");
+  const initialsHint = document.getElementById("initials-hint");
 
   const W = canvas.width;
   const H = canvas.height;
@@ -16,10 +25,13 @@
   const state = {
     running: false,
     mode: "ai",
+    initials: "",
     score: { top: 0, bottom: 0 },
     serve: 1,
     keys: Object.create(null),
     touchX: null,
+    playTime: 0,
+    nextRampAt: RAMP_EVERY,
   };
 
   const paddle = {
@@ -37,10 +49,48 @@
     r: 7,
     vx: 0,
     vy: 0,
-    speed: 320,
+    speed: BASE_SPEED,
   };
 
   let lastTs = 0;
+
+  function normalizeInitials(value) {
+    return String(value || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 5);
+  }
+
+  function hasValidInitials() {
+    return state.mode !== "ai" || normalizeInitials(initialsInput.value).length === 5;
+  }
+
+  function syncStartEnabled() {
+    const ok = hasValidInitials();
+    btnStart.disabled = state.mode === "ai" && !ok;
+    if (state.mode === "ai") {
+      initialsHint.textContent = ok
+        ? `Pronto, ${normalizeInitials(initialsInput.value)}.`
+        : "Digite exatamente 5 caracteres para jogar vs IA.";
+      initialsHint.classList.toggle("error", !ok && initialsInput.value.length > 0);
+    }
+  }
+
+  function updateBottomLabel() {
+    if (state.mode === "ai" && state.initials) {
+      labelBottomEl.textContent = state.initials;
+    } else if (state.mode === "ai") {
+      labelBottomEl.textContent = "você";
+    } else {
+      labelBottomEl.textContent = "baixo";
+    }
+  }
+
+  function resetRamp() {
+    state.playTime = 0;
+    state.nextRampAt = RAMP_EVERY;
+    ball.speed = BASE_SPEED;
+  }
 
   function resetBall(direction) {
     ball.x = W / 2;
@@ -49,7 +99,6 @@
     const dir = direction || state.serve;
     ball.vx = Math.sin(angle) * ball.speed;
     ball.vy = Math.cos(angle) * ball.speed * dir;
-    ball.speed = 320;
   }
 
   function clampPaddle(p) {
@@ -61,7 +110,6 @@
     const ratio = hit / (paddle.w / 2);
     const maxAngle = (65 * Math.PI) / 180;
     const angle = ratio * maxAngle;
-    ball.speed = Math.min(560, ball.speed + 18);
     ball.vx = Math.sin(angle) * ball.speed;
     ball.vy = Math.cos(angle) * ball.speed * (fromTop ? 1 : -1);
     ball.y = fromTop ? p.y + paddle.h + ball.r + 1 : p.y - ball.r - 1;
@@ -83,13 +131,17 @@
     state.serve = side === "top" ? 1 : -1;
     state.running = false;
     overlay.classList.remove("hidden");
+    const bottomName = state.mode === "ai" && state.initials ? state.initials : "BAIXO";
     messageEl.textContent =
       side === "bottom"
-        ? "Ponto para BAIXO. A bola passou do topo."
-        : "Ponto para CIMA. A bola passou do fundo.";
+        ? `Ponto para ${bottomName}. A bola passou do topo.`
+        : `Ponto para CIMA. A bola passou do fundo.`;
     btnStart.textContent = "Espaço · Continuar";
     statusEl.textContent = `${state.score.top} : ${state.score.bottom}`;
     resetBall(state.serve);
+    ball.vx = 0;
+    ball.vy = 0;
+    syncStartEnabled();
   }
 
   function moveHuman(p, left, right, dt) {
@@ -110,8 +162,22 @@
     clampPaddle(topPaddle);
   }
 
+  function rampSpeed(dt) {
+    state.playTime += dt;
+    while (state.playTime >= state.nextRampAt) {
+      ball.speed *= RAMP_FACTOR;
+      const dir = Math.hypot(ball.vx, ball.vy) || 1;
+      ball.vx = (ball.vx / dir) * ball.speed;
+      ball.vy = (ball.vy / dir) * ball.speed;
+      state.nextRampAt += RAMP_EVERY;
+      statusEl.textContent = `x${(ball.speed / BASE_SPEED).toFixed(2)}`;
+    }
+  }
+
   function update(dt) {
     if (!state.running) return;
+
+    rampSpeed(dt);
 
     moveHuman(bottomPaddle, "ArrowLeft", "ArrowRight", dt);
     moveHuman(bottomPaddle, "a", "d", dt);
@@ -145,10 +211,10 @@
   }
 
   function drawCourt() {
-    ctx.fillStyle = "#050b09";
+    ctx.fillStyle = "#0a0306";
     ctx.fillRect(0, 0, W, H);
 
-    ctx.strokeStyle = "rgba(61, 154, 104, 0.45)";
+    ctx.strokeStyle = "rgba(255, 0, 98, 0.28)";
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 10]);
     ctx.beginPath();
@@ -157,7 +223,7 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.strokeStyle = "rgba(125, 255, 179, 0.2)";
+    ctx.strokeStyle = "rgba(255, 0, 98, 0.22)";
     ctx.strokeRect(10, 10, W - 20, H - 20);
   }
 
@@ -170,9 +236,9 @@
 
   function drawBall() {
     ctx.beginPath();
-    ctx.fillStyle = "#7dffb3";
-    ctx.shadowColor = "rgba(125, 255, 179, 0.55)";
-    ctx.shadowBlur = 12;
+    ctx.fillStyle = ACCENT;
+    ctx.shadowColor = "rgba(255, 0, 98, 0.55)";
+    ctx.shadowBlur = 14;
     ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
@@ -181,7 +247,7 @@
   function draw() {
     drawCourt();
     drawPaddle(topPaddle, "#ffb454");
-    drawPaddle(bottomPaddle, "#7dffb3");
+    drawPaddle(bottomPaddle, ACCENT);
     drawBall();
   }
 
@@ -194,10 +260,32 @@
   }
 
   function startGame() {
-    if (!state.running && ball.vx === 0 && ball.vy === 0) resetBall(state.serve);
+    if (state.mode === "ai") {
+      const initials = normalizeInitials(initialsInput.value);
+      if (initials.length !== 5) {
+        initialsHint.textContent = "Digite exatamente 5 caracteres para jogar vs IA.";
+        initialsHint.classList.add("error");
+        initialsInput.focus();
+        syncStartEnabled();
+        return;
+      }
+      state.initials = initials;
+      initialsInput.value = initials;
+      updateBottomLabel();
+    }
+
+    const startingFresh = !state.running && ball.vx === 0 && ball.vy === 0;
+    if (startingFresh) {
+      if (state.score.top === 0 && state.score.bottom === 0 && state.playTime === 0) {
+        resetRamp();
+      }
+      resetBall(state.serve);
+    }
+
     state.running = true;
     overlay.classList.add("hidden");
-    statusEl.textContent = "AO VIVO";
+    statusEl.textContent =
+      ball.speed === BASE_SPEED ? "AO VIVO" : `x${(ball.speed / BASE_SPEED).toFixed(2)}`;
     btnStart.textContent = "Espaço · Pausar";
   }
 
@@ -207,6 +295,7 @@
     messageEl.textContent = "Jogo pausado.";
     statusEl.textContent = "PAUSA";
     btnStart.textContent = "Espaço · Continuar";
+    syncStartEnabled();
   }
 
   function toggleRun() {
@@ -216,12 +305,30 @@
 
   function setMode(mode) {
     state.mode = mode;
+    state.running = false;
+    state.score.top = 0;
+    state.score.bottom = 0;
+    state.serve = 1;
+    state.initials = "";
+    scoreTopEl.textContent = "0";
+    scoreBottomEl.textContent = "0";
+    resetRamp();
+    resetBall(1);
+    ball.vx = 0;
+    ball.vy = 0;
     btnAi.classList.toggle("active", mode === "ai");
     btn2p.classList.toggle("active", mode === "2p");
+    initialsField.classList.toggle("hidden", mode !== "ai");
+    overlay.classList.remove("hidden");
     messageEl.textContent =
       mode === "ai"
-        ? "Você é a raquete de baixo. A IA defende o topo."
+        ? "Informe suas iniciais (5 caracteres) antes de começar."
         : "Dois jogadores no mesmo teclado.";
+    btnStart.textContent = "Espaço · Jogar";
+    statusEl.textContent = "—";
+    updateBottomLabel();
+    syncStartEnabled();
+    if (mode === "ai") initialsInput.focus();
   }
 
   function pointerToCanvasX(clientX) {
@@ -230,6 +337,13 @@
   }
 
   window.addEventListener("keydown", (e) => {
+    if (e.target === initialsInput) {
+      if (e.code === "Space" || e.code === "Enter") {
+        e.preventDefault();
+        if (hasValidInitials()) startGame();
+      }
+      return;
+    }
     state.keys[e.key] = true;
     state.keys[e.key.toLowerCase()] = true;
     if (e.code === "Space") {
@@ -241,6 +355,14 @@
   window.addEventListener("keyup", (e) => {
     state.keys[e.key] = false;
     state.keys[e.key.toLowerCase()] = false;
+  });
+
+  initialsInput.addEventListener("input", () => {
+    const caret = initialsInput.selectionStart;
+    const normalized = normalizeInitials(initialsInput.value);
+    initialsInput.value = normalized;
+    initialsInput.setSelectionRange(caret, caret);
+    syncStartEnabled();
   });
 
   canvas.addEventListener(
@@ -275,9 +397,12 @@
   btnAi.addEventListener("click", () => setMode("ai"));
   btn2p.addEventListener("click", () => setMode("2p"));
 
+  resetRamp();
   resetBall(1);
   ball.vx = 0;
   ball.vy = 0;
+  updateBottomLabel();
+  syncStartEnabled();
   draw();
   requestAnimationFrame(loop);
 })();

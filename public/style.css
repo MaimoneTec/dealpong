@@ -1,13 +1,14 @@
 :root {
-  --bg0: #07110e;
-  --bg1: #0f1f18;
-  --line: #1f3d2e;
-  --glow: #7dffb3;
-  --glow-dim: #3d9a68;
+  --bg0: #10040a;
+  --bg1: #1a0810;
+  --line: #4a1830;
+  --accent: #ff0062;
+  --accent-dim: #b30045;
+  --accent-soft: rgba(255, 0, 98, 0.12);
   --warn: #ffb454;
-  --ink: #d7ffe8;
-  --muted: #7eab93;
-  --panel: rgba(8, 18, 14, 0.88);
+  --ink: #ffe6ef;
+  --muted: #c47a96;
+  --panel: rgba(16, 4, 10, 0.9);
 }
 
 * {
@@ -19,7 +20,7 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(1200px 600px at 50% -10%, #163526 0%, transparent 55%),
+    radial-gradient(1200px 600px at 50% -10%, #3a0a22 0%, transparent 55%),
     linear-gradient(180deg, var(--bg1), var(--bg0));
   color: var(--ink);
   font-family: "Share Tech Mono", ui-monospace, monospace;
@@ -47,8 +48,8 @@ body {
   font-family: "Press Start 2P", system-ui, sans-serif;
   font-size: clamp(1.1rem, 4.2vw, 1.55rem);
   letter-spacing: 0.08em;
-  color: var(--glow);
-  text-shadow: 0 0 18px rgba(125, 255, 179, 0.35);
+  color: var(--accent);
+  text-shadow: 0 0 18px rgba(255, 0, 98, 0.4);
 }
 
 .tag {
@@ -63,9 +64,9 @@ body {
   border-radius: 4px;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(125, 255, 179, 0.08),
+    0 0 0 1px rgba(255, 0, 98, 0.12),
     0 20px 50px rgba(0, 0, 0, 0.45);
-  background: #050b09;
+  background: #0a0306;
   aspect-ratio: 2 / 3;
 }
 
@@ -83,7 +84,7 @@ canvas {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(4, 10, 8, 0.72);
+  background: rgba(10, 3, 6, 0.78);
   backdrop-filter: blur(2px);
   transition: opacity 160ms ease;
 }
@@ -96,14 +97,14 @@ canvas {
 .panel {
   width: min(100%, 320px);
   padding: 1.25rem 1.1rem 1.1rem;
-  border: 1px solid var(--glow-dim);
+  border: 1px solid var(--accent-dim);
   background: var(--panel);
   text-align: center;
 }
 
 .panel-kicker {
   margin: 0;
-  color: var(--glow);
+  color: var(--accent);
   font-size: 0.75rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -122,6 +123,54 @@ canvas {
   margin-bottom: 0.85rem;
 }
 
+.initials-field {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+  text-align: left;
+}
+
+.initials-field.hidden {
+  display: none;
+}
+
+.initials-field label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.initials-field input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #14060c;
+  color: var(--accent);
+  font-family: "Press Start 2P", system-ui, sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 0.28em;
+  text-align: center;
+  text-transform: uppercase;
+  padding: 0.8rem 0.5rem;
+  border-radius: 2px;
+}
+
+.initials-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(255, 0, 98, 0.35);
+}
+
+.initials-field .hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.initials-field .hint.error {
+  color: var(--accent);
+}
+
 .mode,
 .cta {
   font: inherit;
@@ -137,16 +186,16 @@ canvas {
 }
 
 .mode.active {
-  border-color: var(--glow);
-  color: var(--glow);
-  background: rgba(125, 255, 179, 0.08);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .cta {
   width: 100%;
   border: 0;
-  background: var(--glow);
-  color: #062014;
+  background: var(--accent);
+  color: #fff;
   font-family: "Press Start 2P", system-ui, sans-serif;
   font-size: 0.62rem;
   letter-spacing: 0.06em;
@@ -157,6 +206,12 @@ canvas {
 .cta:focus-visible {
   filter: brightness(1.08);
   outline: none;
+}
+
+.cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
 }
 
 .help {
@@ -173,7 +228,7 @@ canvas {
 .help span {
   display: inline-block;
   min-width: 3.2rem;
-  color: var(--warn);
+  color: var(--accent);
 }
 
 .scoreboard {
@@ -206,7 +261,7 @@ canvas {
 .score strong {
   font-family: "Press Start 2P", system-ui, sans-serif;
   font-size: clamp(1rem, 4vw, 1.35rem);
-  color: var(--glow);
+  color: var(--accent);
 }
 
 @media (max-width: 420px) {

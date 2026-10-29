@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b1210" />
+    <meta name="theme-color" content="#ff0062" />
     <title>Dealpong</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -31,6 +31,22 @@
               <button type="button" id="btn-ai" class="mode active" data-mode="ai">1P · vs IA</button>
               <button type="button" id="btn-2p" class="mode" data-mode="2p">2P · local</button>
             </div>
+            <div id="initials-field" class="initials-field">
+              <label for="initials">Suas iniciais</label>
+              <input
+                id="initials"
+                name="initials"
+                type="text"
+                maxlength="5"
+                minlength="5"
+                autocomplete="off"
+                spellcheck="false"
+                inputmode="text"
+                placeholder="XXXXX"
+                aria-describedby="initials-hint"
+              />
+              <p id="initials-hint" class="hint">Digite exatamente 5 caracteres para jogar vs IA.</p>
+            </div>
             <button type="button" id="btn-start" class="cta">Espaço · Jogar</button>
             <ul class="help">
               <li><span>P1</span> ← → / A D / touch</li>
@@ -51,7 +67,7 @@
           <strong id="status">—</strong>
         </div>
         <div class="score right">
-          <span class="label">baixo</span>
+          <span class="label" id="label-bottom">baixo</span>
           <strong id="score-bottom">0</strong>
         </div>
       </footer>
