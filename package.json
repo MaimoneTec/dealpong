@@ -4,10 +4,7 @@
   "private": true,
   "description": "Pong com raquetes horizontais para dois jogadores",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
-  "engines": {
-    "node": ">=20"
+    "start": "python server.py",
+    "dev": "python server.py"
   }
 }
